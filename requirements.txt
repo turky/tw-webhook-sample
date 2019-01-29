@@ -1,0 +1,3 @@
+﻿bottle
+google-cloud-datastore
+google-cloud-logging
