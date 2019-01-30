@@ -2,7 +2,6 @@ import hmac
 import base64
 import hashlib
 import json
-import logging
 from bottle import Bottle, request, HTTPResponse, HTTPError
 from google.cloud import datastore, logging
 from settings import TWITTER_CONSUMER_SECRET
@@ -27,18 +26,19 @@ def treat_webhook():
     log_client  = logging.Client()
     logger = log_client.logger('dev_log')
     try:
-        tw_objects = request.json
-        logger.log_text(json.dumps(tw_objects))
-        client = datastore.Client()
-        with client.transaction() as txs:
-            cur_ent = datastore.entity.Entity()
-            cur_ent.update(tw_objects)
-            txs.put(cur_ent)
-            return HTTPResponse(body='operation successed', status=200)
+        for cur_item in request.json:
+            cur_item = request.json
+            cur_id = cur_item['id_str']
+            logger.log_text(cur_id)
+            client = datastore.Client()
+            with client.transaction() as txs:
+                cur_ent = datastore.entity.Entity(client.key("tw_object", cur_id))
+                cur_ent.update(cur_item)
+                txs.put(cur_ent)
+        return HTTPResponse(body='operation successed', status=200)
     except:
-        raise
-        #logger.log_text('Something Happend')
-        #return HTTPError(status=500)
+        logger.log_text('Something Happend with {}'.format(str(request.json)))
+        return HTTPError(status=500)
 
 @app.error(404)
 def error_404(error):
